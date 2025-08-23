@@ -141,6 +141,38 @@ export async function launchProcess(options: LaunchProcessOptions): Promise<Laun
     shell: options.shell,
     stdio,
   };
+
+  // --- BEGIN override Firefox profile directory via env ---
+  try {
+    // 1) Достаём PW_OVERRIDE_FF_PROFILE из options.env (любой формы) или из process.env
+    let override;
+    const ev = options.env;
+
+    if (Array.isArray(ev)) {
+      // формат: [{ name: 'FOO', value: 'bar' }, ...]
+      const entry = ev.find(e => e && e.name === 'PW_OVERRIDE_FF_PROFILE');
+      if (entry && entry.value)
+        override = entry.value;
+    } else if (ev && typeof ev === 'object') {
+      // формат: { FOO: 'bar', ... }
+      override = ev.PW_OVERRIDE_FF_PROFILE || ev['PW_OVERRIDE_FF_PROFILE'];
+    }
+
+    if (!override && typeof process !== 'undefined' && process.env)
+      override = process.env.PW_OVERRIDE_FF_PROFILE;
+
+    // 2) Если есть override — подменяем путь после флага профиля
+    if (override) {
+      const args = options.args || (options.args = []);
+      const idx = args.findIndex(a => a === '-profile' || a === '--profile' || a === '-P');
+      if (idx !== -1 && idx + 1 < args.length)
+        args[idx + 1] = override; // никакие кавычки не нужны: аргументы уже раздельные
+    }
+  } catch (e) {
+    // no-op
+  }
+  // --- END override Firefox profile directory via env ---
+
   const spawnedProcess = childProcess.spawn(options.command, options.args || [], spawnOptions);
 
   const cleanup = async () => {
