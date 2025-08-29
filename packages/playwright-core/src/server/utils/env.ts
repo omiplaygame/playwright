@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import { LaunchProcessOptions } from '../../utils';
+import type * as types from '../types';
+
 export function getFromENV(name: string): string | undefined {
   let value = process.env[name];
   value = value === undefined ? process.env[`npm_config_${name.toLowerCase()}`] : value;
@@ -55,4 +58,41 @@ export function isLikelyNpxGlobal() {
 // Indicate that this and child processes are running under Playwright Test.
 export function setPlaywrightTestProcessEnv() {
   return process.env['PLAYWRIGHT_TEST'] = '1';
+}
+
+export function userDataDirOverride(options: LaunchProcessOptions | types.LaunchOptions, profileName: string): string | undefined {
+  // --- BEGIN override Firefox profile directory via env ---
+  let override: string | undefined;
+
+  try {
+    // 1) Достаём PW_OVERRIDE_FF_PROFILE из options.env (любой формы) или из process.env
+    const ev = options.env;
+
+    if (Array.isArray(ev)) {
+      // формат: [{ name: 'FOO', value: 'bar' }, ...]
+      const entry = ev.find(e => e && e.name === profileName);
+      if (entry && entry.value)
+        override = entry.value;
+    } else if (ev && typeof ev === 'object') {
+      // формат: { FOO: 'bar', ... }
+      const value = ev[profileName];
+      override = typeof value === 'string' ? value : undefined;
+    }
+
+    if (!override && typeof process !== 'undefined' && process.env)
+      override = process.env[profileName];
+
+    // 2) Если есть override — подменяем путь после флага профиля
+    if (override) {
+      const args = options.args || (options.args = []);
+      const idx = args.findIndex(a => a === '-profile' || a === '--profile' || a === '-P');
+      if (idx !== -1 && idx + 1 < args.length)
+        args[idx + 1] = override; // никакие кавычки не нужны: аргументы уже раздельные
+    }
+  } catch (e) {
+    // no-op
+  }
+
+  return override;
+  // --- END override Firefox profile directory via env ---
 }

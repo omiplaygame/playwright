@@ -34,6 +34,7 @@ import { ClientCertificatesProxy } from './socksClientCertificatesInterceptor';
 import { WebSocketTransport } from './transport';
 import { RecentLogsCollector } from './utils/debugLogger';
 
+import { userDataDirOverride } from './utils/env';
 import type { Browser, BrowserOptions, BrowserProcess } from './browser';
 import type { BrowserContext } from './browserContext';
 import type { Progress } from './progress';
@@ -67,9 +68,13 @@ export abstract class BrowserType extends SdkObject {
   async launch(progress: Progress, options: types.LaunchOptions, protocolLogger?: types.ProtocolLogger): Promise<Browser> {
     options = this._validateLaunchOptions(options);
     const seleniumHubUrl = (options as any).__testHookSeleniumRemoteURL || process.env.SELENIUM_REMOTE_URL;
+
     if (seleniumHubUrl)
       return this._launchWithSeleniumHub(progress, seleniumHubUrl, options);
-    return this._innerLaunchWithRetries(progress, options, undefined, helper.debugProtocolLogger(protocolLogger)).catch(e => { throw this._rewriteStartupLog(e); });
+
+    const userDataDir = userDataDirOverride(options, 'PW_OVERRIDE_FF_PROFILE');
+
+    return this._innerLaunchWithRetries(progress, options, undefined, helper.debugProtocolLogger(protocolLogger), userDataDir).catch(e => { throw this._rewriteStartupLog(e); });
   }
 
   async launchPersistentContext(progress: Progress, userDataDir: string, options: channels.BrowserTypeLaunchPersistentContextOptions & { cdpPort?: number, internalIgnoreHTTPSErrors?: boolean, socksProxyPort?: number }): Promise<BrowserContext> {
