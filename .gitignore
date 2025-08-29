@@ -37,4 +37,4 @@ test-results
 playwright.env
 /firefox/
 packages/playwright-core/*.tgz
-instHelper.txt
+instHelper.md
