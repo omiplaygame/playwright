@@ -27,8 +27,6 @@ type ElementHandleWaitForSelectorOptionsNotHidden = ElementHandleWaitForSelector
   state?: 'visible'|'attached';
 };
 
-export type PublicIpHint = string | undefined;
-
 /**
  * Page provides methods to interact with a single tab in a [Browser](https://playwright.dev/docs/api/class-browser),
  * or an [extension background page](https://developer.chrome.com/extensions/background_pages) in Chromium. One
@@ -21858,10 +21856,6 @@ export interface LaunchOptions {
      * Optional password to use if HTTP proxy requires authentication.
      */
     password?: string;
-    /**
-	   * Public IP address from cache, received from outside of Camoufox.
-	  */
-	  publicIpHint?: PublicIpHint;
   };
 
   /**
